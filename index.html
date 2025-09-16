@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f2f2f7">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Bet Event Exposure</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="normalize.js"></script>
+  <script defer src="parser.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="screen">
+    <header class="nav">
+      <div class="nav-inner">
+        <h1 class="title">Bet Event Exposure</h1>
+        <p class="subtitle">Totals & counts per event from your HTML export</p>
+      </div>
+    </header>
+
+    <main class="content">
+      <section class="card">
+        <div class="row">
+          <label class="file-label">
+            <input type="file" id="fileInput" accept=".html,.htm">
+            <span>Import HTML</span>
+          </label>
+          <span id="status" class="status"></span>
+        </div>
+        <ul class="hint">
+          <li>Includes only <b>Accepted + Unsettled</b> slips.</li>
+          <li>Counts <b>full parlay stake</b> for <b>each leg</b> of an unsettled parlay.</li>
+          <li>Skips slips marked Lost/Won/Paid/Settled/Voided/Cashed out/Rejected.</li>
+          <li>Skips legs marked Void/Refund/Returned/Cancelled.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <div class="toolbar">
+          <input type="search" id="searchBox" placeholder="Search events" aria-label="Search events">
+          <div class="btns">
+            <button id="clearBtn" class="btn ghost">Clear</button>
+            <button id="resetBtn" class="btn ghost">Reset</button>
+          </div>
+        </div>
+
+        <div class="meta">
+          <span class="pill" id="pillEvents">—</span>
+          <span class="pill" id="pillExposure">—</span>
+        </div>
+
+        <div class="table-wrap">
+          <table id="resultsTable">
+            <thead>
+              <tr>
+                <th data-key="event">Event</th>
+                <th data-key="total" class="num">Total Stake (PKR)</th>
+                <th data-key="count" class="num">Appearances</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <div id="spinner" class="spinner hidden"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <details>
+          <summary>Parser diagnostics</summary>
+          <div id="diag"></div>
+        </details>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <small>Private by design · Everything runs on‑device after first load</small>
+    </footer>
+  </div>
+</body>
+</html>
