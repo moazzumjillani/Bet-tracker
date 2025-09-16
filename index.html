@@ -16,19 +16,28 @@
   <div class="screen">
     <header class="nav">
       <div class="nav-inner">
-        <h1 class="title">Bet Event Exposure</h1>
-        <p class="subtitle">Totals & counts per event from your HTML export</p>
+        <div class="brand">
+          <div class="logo" aria-hidden="true">🎯</div>
+          <div class="brand-copy">
+            <h1 class="title">Bet Event Exposure</h1>
+            <p class="subtitle">Totals & counts per event from your HTML export</p>
+          </div>
+        </div>
       </div>
     </header>
 
     <main class="content">
       <section class="card">
+        <header class="card-head">
+          <h2>Import slip data</h2>
+          <p>Drop in your bookmaker export to surface your true exposure in seconds.</p>
+        </header>
         <div class="row">
           <label class="file-label">
             <input type="file" id="fileInput" accept=".html,.htm">
             <span>Import HTML</span>
           </label>
-          <span id="status" class="status"></span>
+          <span id="status" class="status" role="status" aria-live="polite"></span>
         </div>
         <ul class="hint">
           <li>Includes only <b>Accepted + Unsettled</b> slips.</li>
@@ -39,6 +48,10 @@
       </section>
 
       <section class="card">
+        <header class="card-head">
+          <h2>Event overview</h2>
+          <p>Search and sort to zero in on the markets that matter most.</p>
+        </header>
         <div class="toolbar">
           <input type="search" id="searchBox" placeholder="Search events" aria-label="Search events">
           <div class="btns">
@@ -67,9 +80,14 @@
         </div>
       </section>
 
-      <section class="card">
-        <details>
-          <summary>Parser diagnostics</summary>
+      <section class="card card-compact">
+        <details class="diagnostics">
+          <summary>
+            <div class="summary-copy">
+              <span class="summary-title">Parser diagnostics</span>
+              <span class="summary-subtitle">Helpful if something looks off after parsing.</span>
+            </div>
+          </summary>
           <div id="diag"></div>
         </details>
       </section>
