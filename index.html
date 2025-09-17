@@ -44,6 +44,7 @@
           <li>Counts <b>full parlay stake</b> for <b>each leg</b> of an unsettled parlay.</li>
           <li>Skips slips marked Lost/Won/Paid/Settled/Voided/Cashed out/Rejected.</li>
           <li>Skips legs marked Void/Refund/Returned/Cancelled.</li>
+          <li>The combined exposure card totals each qualifying accumulator stake once.</li>
         </ul>
       </section>
 
@@ -78,6 +79,70 @@
           </table>
           <div id="spinner" class="spinner hidden"></div>
         </div>
+      </section>
+
+      <section class="card">
+        <header class="card-head">
+          <h2>Top accumulator pairs (unsettled)</h2>
+          <p>Automatically surfaces the five most common two-leg combinations and their combined stakes.</p>
+        </header>
+
+        <div class="table-wrap top-pairs">
+          <table id="topPairsTable">
+            <thead>
+              <tr>
+                <th scope="col" class="num">#</th>
+                <th scope="col">Event A</th>
+                <th scope="col">Event B</th>
+                <th scope="col" class="num">Appearances</th>
+                <th scope="col" class="num">Combined stake</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p id="topPairsEmpty" class="empty">Import slips to surface the top accumulator pairs.</p>
+        </div>
+      </section>
+
+      <section class="card">
+        <header class="card-head">
+          <h2>Combined exposure (unsettled accumulators)</h2>
+          <p>Select two or three events to see where they appear together. Stakes are counted once per qualifying slip.</p>
+        </header>
+
+        <div class="combo-grid">
+          <label class="combo-field">
+            <span>Event 1</span>
+            <select id="comboSelect1" disabled>
+              <option value="">Select event…</option>
+            </select>
+          </label>
+          <label class="combo-field">
+            <span>Event 2</span>
+            <select id="comboSelect2" disabled>
+              <option value="">Select event…</option>
+            </select>
+          </label>
+          <label class="combo-field">
+            <span>Event 3 (optional)</span>
+            <select id="comboSelect3" disabled>
+              <option value="">Select event…</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="combo-meta">
+          <div class="combo-result">
+            <span class="combo-label">Matching accumulators</span>
+            <span class="combo-value" id="comboCount">—</span>
+          </div>
+          <div class="combo-result">
+            <span class="combo-label">Combined stake</span>
+            <span class="combo-value" id="comboStake">—</span>
+          </div>
+        </div>
+
+        <p class="combo-message" id="comboMessage">Import slips to get started.</p>
       </section>
 
       <section class="card card-compact">
