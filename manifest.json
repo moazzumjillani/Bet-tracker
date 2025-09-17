@@ -3,8 +3,8 @@
   "short_name": "Bet Exposure",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#f2f2f7",
-  "theme_color": "#f2f2f7",
+  "background_color": "#05030f",
+  "theme_color": "#05030f",
   "icons": [
     {
       "src": "icons/icon-192.png",

@@ -29,6 +29,8 @@ let rawSlips  = [];
 let comboTimer = null;
 let hasParsedData = false;
 let topPairs = [];
+const aggDefaultSort = { key: 'total', asc: false };
+let aggSortState = { ...aggDefaultSort };
 
 function setStatus(msg){ statusEl.textContent = msg || ''; }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -163,22 +165,39 @@ function updateComboSelectors(){
   scheduleComboRecalc();
 }
 
-function renderAggregates() {
-  const map = new Map();
-  for (const r of rawEvents) {
-    const key = r.eventKey;
-    const stake = r.stakePKR || 0;
-    const cur = map.get(key) || {event: key, total: 0, count: 0};
-    cur.total += stake;
-    cur.count += 1;
-    map.set(key, cur);
+function applyAggSort(){
+  const { key, asc } = aggSortState;
+  aggRows.sort((a, b) => {
+    const va = a[key];
+    const vb = b[key];
+    if (typeof va === 'number' && typeof vb === 'number') {
+      return asc ? va - vb : vb - va;
+    }
+    return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
+}
+
+function renderAggregates({ rebuild = false } = {}) {
+  if (rebuild) {
+    const map = new Map();
+    for (const r of rawEvents) {
+      const key = r.eventKey;
+      const stake = r.stakePKR || 0;
+      const cur = map.get(key) || { event: key, total: 0, count: 0 };
+      cur.total += stake;
+      cur.count += 1;
+      map.set(key, cur);
+    }
+    aggRows = Array.from(map.values());
+    aggSortState = { ...aggDefaultSort };
+    applyAggSort();
+    document.querySelectorAll('#resultsTable th[data-key]').forEach(th => th.classList.remove('asc'));
   }
-  aggRows = Array.from(map.values()).sort((a,b)=> b.total - a.total);
 
-  const q = (searchBox.value||'').toLowerCase().trim();
-  const rows = q ? aggRows.filter(r => r.event.toLowerCase().includes(q)) : aggRows;
+  const q = (searchBox.value || '').toLowerCase().trim();
+  const source = q ? aggRows.filter(r => r.event.toLowerCase().includes(q)) : aggRows;
 
-  tableBody.innerHTML = rows.map(r => `
+  tableBody.innerHTML = source.map(r => `
     <tr>
       <td>${escapeHtml(r.event)}</td>
       <td class="num">${fmtPKR(r.total)}</td>
@@ -186,9 +205,18 @@ function renderAggregates() {
     </tr>
   `).join('');
 
-  pillEvents.textContent   = `${aggRows.length} events`;
-  const totalStake = aggRows.reduce((s,r)=>s+r.total,0);
-  pillExposure.textContent = `Total ${fmtPKR(totalStake)}`;
+  if (!source.length) {
+    tableBody.innerHTML = '';
+  }
+
+  if (aggRows.length) {
+    pillEvents.textContent = `${aggRows.length} events`;
+    const totalStake = aggRows.reduce((s, r) => s + r.total, 0);
+    pillExposure.textContent = `Total ${fmtPKR(totalStake)}`;
+  } else {
+    pillEvents.textContent = '—';
+    pillExposure.textContent = '—';
+  }
 }
 
 function renderTopPairs(){
@@ -226,14 +254,20 @@ async function parseAndRender(htmlText){
     rawSlips = mapSlips(slips);
     topPairs = buildPairStats(rawSlips);
     hasParsedData = true;
-    renderAggregates();
+    renderAggregates({ rebuild: true });
     updateComboSelectors();
     renderTopPairs();
     setStatus('Done');
   }catch(err){
     setStatus('Parse error');
     diagEl.textContent = String(err && err.message || err);
+    rawEvents = [];
+    rawSlips = [];
+    aggRows = [];
+    hasParsedData = false;
     topPairs = [];
+    renderAggregates({ rebuild: true });
+    updateComboSelectors();
     renderTopPairs();
   } finally {
     spinner.classList.add('hidden');
@@ -252,23 +286,26 @@ document.querySelectorAll('#resultsTable th').forEach(th => {
   th.addEventListener('click', () => {
     const key = th.dataset.key;
     if (!key) return;
-    const asc = th.classList.toggle('asc');
-    aggRows.sort((a,b)=>{
-      const va = a[key], vb = b[key];
-      if (typeof va === 'number' && typeof vb === 'number') return asc? va - vb : vb - va;
-      return asc? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+    const asc = aggSortState.key === key ? !aggSortState.asc : true;
+    aggSortState = { key, asc };
+    document.querySelectorAll('#resultsTable th[data-key]').forEach(header => {
+      header.classList.toggle('asc', header === th && asc);
     });
+    applyAggSort();
     renderAggregates();
   });
 });
 
-searchBox.addEventListener('input', renderAggregates);
+searchBox.addEventListener('input', () => renderAggregates());
 clearBtn.addEventListener('click', ()=>{ searchBox.value=''; renderAggregates(); });
 resetBtn.addEventListener('click', ()=>{
   rawEvents = []; aggRows=[]; rawSlips=[]; topPairs=[]; tableBody.innerHTML='';
   pillEvents.textContent='—'; pillExposure.textContent='—';
   diagEl.textContent=''; setStatus(''); fileInput.value='';
+  searchBox.value='';
   hasParsedData = false;
+  aggSortState = { ...aggDefaultSort };
+  renderAggregates({ rebuild: true });
   updateComboSelectors();
   renderTopPairs();
 });
