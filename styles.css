@@ -268,6 +268,86 @@ p {
   margin-bottom: 18px;
 }
 
+.combo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.combo-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.combo-field span {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.combo-field select {
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.92);
+  font-size: 15px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: inherit;
+  color: var(--text);
+}
+
+.combo-field select:focus {
+  outline: none;
+  border-color: rgba(79, 70, 239, 0.6);
+  box-shadow: 0 0 0 3px rgba(79, 70, 239, 0.18);
+}
+
+.combo-field select:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.combo-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.combo-result {
+  flex: 1 1 220px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.combo-label {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.combo-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.combo-message {
+  font-size: 14px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
 #searchBox {
   flex: 1;
   min-width: 240px;
@@ -356,6 +436,21 @@ button {
   border: 1px solid var(--border);
   background: var(--card-strong);
   box-shadow: var(--shadow-soft);
+}
+
+.table-wrap.top-pairs {
+  max-height: none;
+}
+
+.table-wrap.top-pairs table {
+  min-width: 100%;
+}
+
+.table-wrap.top-pairs .empty {
+  margin: 18px;
+  text-align: center;
+  color: var(--muted);
+  font-weight: 500;
 }
 
 .table-wrap::-webkit-scrollbar {

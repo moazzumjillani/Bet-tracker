@@ -79,6 +79,7 @@
 
   function parseHTMLToEvents(html){
     const out = [];
+    const slipsOut = [];
     const diag = [];
 
     const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -97,15 +98,34 @@
       if (!stake || !live) return;
 
       const legs = extractLegs(table);
+      const slipEvents = [];
+      let kept = 0;
       legs.forEach(leg=>{
         if (/\b(void(?:ed)?|refund(?:ed)?|returned|cancel(?:led)?)\b/i.test(leg.status)) return;
         const eventKey = normalizeEvent(leg.competition, leg.p1, leg.p2, leg.market);
+        slipEvents.push(eventKey);
         out.push({ eventKey, stakePKR: stake });
+        kept++;
       });
+
+      if (!kept){
+        diag.push(`Slip ${idx+1}: all legs filtered out`);
+        return;
+      }
+
+      const uniqueEvents = Array.from(new Set(slipEvents));
+      const slipId = slip.getAttribute('id') || slip.getAttribute('data-slip-id') || `slip-${idx+1}`;
+      slipsOut.push({ slipId, stakePKR: stake, events: uniqueEvents });
+      if (uniqueEvents.length !== kept){
+        diag.push(`Slip ${idx+1}: ${kept} legs kept (${uniqueEvents.length} unique events)`);
+      } else {
+        diag.push(`Slip ${idx+1}: ${kept} legs kept`);
+      }
     });
 
     diag.push(`Total legs parsed: ${out.length}`);
-    return { rows: out, diagnostics: diag.join('\n') };
+    diag.push(`Total unsettled slips captured: ${slipsOut.length}`);
+    return { rows: out, slips: slipsOut, diagnostics: diag.join('\n') };
   }
 
   window.parseHTMLToEvents = parseHTMLToEvents;
