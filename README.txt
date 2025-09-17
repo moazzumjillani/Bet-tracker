@@ -7,7 +7,7 @@ What it does
 - Filter to accepted + unsettled slips.
 - Count FULL slip stake for EVERY leg (even if that leg shows "won" but the parlay isn't finished).
 - Normalize labels so duplicates collapse.
-- Show a single table: Event | Total Stake (PKR) | Appearances.
+- Surface a vivid dashboard with the event overview table, automatic "Top accumulator pairs" card, and the combined exposure selectors for two- or three-event overlap totals (stakes counted once per qualifying slip).
 - Works fully offline after first load (PWA, service worker).
 
 How to deploy on Netlify (1 minute)
@@ -26,11 +26,15 @@ How to use
 ----------
 1) Tap "Import HTML" and pick your bet-history .html file from Files.
 2) Wait a moment while it parses.
-3) You'll get a table of unique events with total stake (PKR) and appearances.
-4) Use the search box to filter. Tap column headers to sort.
+3) The dashboard fills with:
+   - **Event overview** — totals the full stake for each unique event.
+   - **Top accumulator pairs** — highlights the five two-leg combinations that occur most often, with their combined stake.
+   - **Combined exposure** — lets you pick any two or three events to see how many unsettled accumulators include *all* of them and the total stake tied up in those slips. Use the **Clear selectors** button to start a fresh comparison instantly.
+4) Use the search box to filter the overview table and tap column headers to sort. Reset clears the imported data, filters, and cards so you can load a new file.
 
 Notes
 -----
 - All parsing happens ON-DEVICE. Your file never leaves your phone.
 - If some rows don't appear, open "Parser diagnostics" to see what was recognized.
 - This parser uses robust heuristics; if your export format changes, send a sample to refine the selector profile.
+- The "Top accumulator pairs" card refreshes automatically after every import or reset, and the combined exposure selectors only calculate when you pick distinct events.
