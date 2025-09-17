@@ -5,6 +5,20 @@ if ('serviceWorker' in navigator) {
 const fileInput = document.getElementById('fileInput');
 const statusEl  = document.getElementById('status');
 const tableBody = document.querySelector('#resultsTable tbody');
+const sortHeaders = Array.from(document.querySelectorAll('#resultsTable th[data-key]'));
+const headerDefaultMap = sortHeaders.reduce((map, header) => {
+  const key = header.dataset.key;
+  if (!key) return map;
+  map[key] = (header.dataset.defaultSort || 'asc') !== 'desc';
+  return map;
+}, {});
+const defaultSortHeader = sortHeaders.find(header => header.getAttribute('data-default') === 'true') || sortHeaders[0];
+const aggDefaultSort = defaultSortHeader
+  ? {
+      key: defaultSortHeader.dataset.key,
+      asc: headerDefaultMap[defaultSortHeader.dataset.key] ?? true,
+    }
+  : { key: 'event', asc: true };
 const searchBox = document.getElementById('searchBox');
 const clearBtn  = document.getElementById('clearBtn');
 const resetBtn  = document.getElementById('resetBtn');
@@ -29,6 +43,7 @@ let rawSlips  = [];
 let comboTimer = null;
 let hasParsedData = false;
 let topPairs = [];
+let aggSortState = { ...aggDefaultSort };
 
 function setStatus(msg){ statusEl.textContent = msg || ''; }
 function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
@@ -163,32 +178,84 @@ function updateComboSelectors(){
   scheduleComboRecalc();
 }
 
-function renderAggregates() {
-  const map = new Map();
-  for (const r of rawEvents) {
-    const key = r.eventKey;
-    const stake = r.stakePKR || 0;
-    const cur = map.get(key) || {event: key, total: 0, count: 0};
-    cur.total += stake;
-    cur.count += 1;
-    map.set(key, cur);
+function applyAggSort(){
+  const { key, asc } = aggSortState;
+  aggRows.sort((a, b) => {
+    const va = a[key];
+    const vb = b[key];
+    if (typeof va === 'number' && typeof vb === 'number') {
+      return asc ? va - vb : vb - va;
+    }
+    return asc ? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
+  });
+}
+
+function updateSortIndicators(){
+  const { key, asc } = aggSortState;
+  sortHeaders.forEach(header => {
+    if (header.dataset.key === key){
+      header.classList.toggle('asc', asc);
+      header.classList.toggle('desc', !asc);
+      header.setAttribute('aria-sort', asc ? 'ascending' : 'descending');
+    } else {
+      header.classList.remove('asc', 'desc');
+      header.setAttribute('aria-sort', 'none');
+    }
+  });
+}
+
+function renderAggregates({ rebuild = false } = {}) {
+  if (rebuild) {
+    const map = new Map();
+    for (const r of rawEvents) {
+      const key = r.eventKey;
+      const stake = r.stakePKR || 0;
+      const cur = map.get(key) || { event: key, total: 0, count: 0 };
+      cur.total += stake;
+      cur.count += 1;
+      map.set(key, cur);
+    }
+    aggRows = Array.from(map.values());
+    aggSortState = { ...aggDefaultSort };
+    applyAggSort();
   }
-  aggRows = Array.from(map.values()).sort((a,b)=> b.total - a.total);
 
-  const q = (searchBox.value||'').toLowerCase().trim();
-  const rows = q ? aggRows.filter(r => r.event.toLowerCase().includes(q)) : aggRows;
+  const q = (searchBox.value || '').toLowerCase().trim();
+  const source = q ? aggRows.filter(r => r.event.toLowerCase().includes(q)) : aggRows;
 
-  tableBody.innerHTML = rows.map(r => `
-    <tr>
-      <td>${escapeHtml(r.event)}</td>
-      <td class="num">${fmtPKR(r.total)}</td>
-      <td class="num">${r.count}</td>
-    </tr>
-  `).join('');
+  let rowsHtml = '';
+  if (source.length) {
+    rowsHtml = source.map(r => `
+      <tr>
+        <td>${escapeHtml(r.event)}</td>
+        <td class="num">${fmtPKR(r.total)}</td>
+        <td class="num">${r.count}</td>
+      </tr>
+    `).join('');
+  } else {
+    const rawQuery = (searchBox.value || '').trim();
+    const message = aggRows.length
+      ? (q ? `No events match “${escapeHtml(rawQuery)}”.` : 'No events to display yet.')
+      : (hasParsedData ? 'No unsettled events were recognised in the latest import.' : 'Import slips to populate the dashboard.');
+    rowsHtml = `
+      <tr class="empty-row">
+        <td colspan="3">${message}</td>
+      </tr>
+    `;
+  }
 
-  pillEvents.textContent   = `${aggRows.length} events`;
-  const totalStake = aggRows.reduce((s,r)=>s+r.total,0);
-  pillExposure.textContent = `Total ${fmtPKR(totalStake)}`;
+  tableBody.innerHTML = rowsHtml;
+
+  if (aggRows.length) {
+    pillEvents.textContent = `${aggRows.length} events`;
+    const totalStake = aggRows.reduce((s, r) => s + r.total, 0);
+    pillExposure.textContent = `Total ${fmtPKR(totalStake)}`;
+  } else {
+    pillEvents.textContent = '—';
+    pillExposure.textContent = '—';
+  }
+
+  updateSortIndicators();
 }
 
 function renderTopPairs(){
@@ -226,14 +293,20 @@ async function parseAndRender(htmlText){
     rawSlips = mapSlips(slips);
     topPairs = buildPairStats(rawSlips);
     hasParsedData = true;
-    renderAggregates();
+    renderAggregates({ rebuild: true });
     updateComboSelectors();
     renderTopPairs();
     setStatus('Done');
   }catch(err){
     setStatus('Parse error');
     diagEl.textContent = String(err && err.message || err);
+    rawEvents = [];
+    rawSlips = [];
+    aggRows = [];
+    hasParsedData = false;
     topPairs = [];
+    renderAggregates({ rebuild: true });
+    updateComboSelectors();
     renderTopPairs();
   } finally {
     spinner.classList.add('hidden');
@@ -248,27 +321,37 @@ fileInput.addEventListener('change', async (e) => {
   await parseAndRender(text);
 });
 
-document.querySelectorAll('#resultsTable th').forEach(th => {
-  th.addEventListener('click', () => {
-    const key = th.dataset.key;
-    if (!key) return;
-    const asc = th.classList.toggle('asc');
-    aggRows.sort((a,b)=>{
-      const va = a[key], vb = b[key];
-      if (typeof va === 'number' && typeof vb === 'number') return asc? va - vb : vb - va;
-      return asc? String(va).localeCompare(String(vb)) : String(vb).localeCompare(String(va));
-    });
-    renderAggregates();
+function updateAggregateSort(key){
+  if (!key) return;
+  const defaultAsc = headerDefaultMap[key] ?? true;
+  const asc = aggSortState.key === key ? !aggSortState.asc : defaultAsc;
+  aggSortState = { key, asc };
+  applyAggSort();
+  renderAggregates();
+}
+
+sortHeaders.forEach(header => {
+  header.addEventListener('click', () => updateAggregateSort(header.dataset.key));
+  header.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' || event.key === ' ' || event.key === 'Spacebar') {
+      event.preventDefault();
+      updateAggregateSort(header.dataset.key);
+    }
   });
 });
 
-searchBox.addEventListener('input', renderAggregates);
+updateSortIndicators();
+
+searchBox.addEventListener('input', () => renderAggregates());
 clearBtn.addEventListener('click', ()=>{ searchBox.value=''; renderAggregates(); });
 resetBtn.addEventListener('click', ()=>{
   rawEvents = []; aggRows=[]; rawSlips=[]; topPairs=[]; tableBody.innerHTML='';
   pillEvents.textContent='—'; pillExposure.textContent='—';
   diagEl.textContent=''; setStatus(''); fileInput.value='';
+  searchBox.value='';
   hasParsedData = false;
+  aggSortState = { ...aggDefaultSort };
+  renderAggregates({ rebuild: true });
   updateComboSelectors();
   renderTopPairs();
 });
@@ -278,4 +361,5 @@ comboSelects.forEach(sel => {
   sel.addEventListener('change', scheduleComboRecalc);
 });
 
+renderAggregates();
 renderTopPairs();
